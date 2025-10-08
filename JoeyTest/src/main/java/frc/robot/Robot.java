@@ -14,14 +14,23 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * this project, you must also update the Main.java file in the project.
  */
 public class Robot extends TimedRobot {
+  public static final int FAIL = -1;
+  public static final int PASS = 1;
+  public static final int DONE = 2;
+  public static final int CONT = 3;
+
+  public static final int NEO_CURRENT_LIMIT     = 60;
+  public static final int NEO_550_CURRENT_LIMIT = 30;
+  public static final int VORTEX_CURRENT_LIMIT  = 80;
+
   private static final String kDefaultAuto = "Default";
   private static final String kCustomAuto = "My Auto";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
-  private Wheels wheels;
   private int integre = 1;
   private int printAmount = 5;
-
+  private Controls controls; 
+  private Drive drive;
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -32,8 +41,9 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("Center Auto", "Center Auto");
     m_chooser.addOption("Right Auto", "Right Auto");
     SmartDashboard.putData("Auto choices", m_chooser);
+    controls = new Controls();
+    drive = new Drive();
 
-    wheels = new Wheels();
   }
 
   /**
@@ -84,9 +94,8 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    m_autoSelected = m_chooser.getSelected();
-    // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
-    System.out.println("Auto selected: " + m_autoSelected);
+    wheelControl();
+  
   }
 
   /** This function is called once when the robot is disabled. */
@@ -105,7 +114,6 @@ public class Robot extends TimedRobot {
   @Override
   public void testPeriodic() {
     if (integre <= printAmount) {
-      wheels.printWheelPos();
       integre ++;
     }
   }
@@ -117,4 +125,24 @@ public class Robot extends TimedRobot {
   /** This function is called periodically whilst in simulation. */
   @Override
   public void simulationPeriodic() {}
+
+  private void wheelControl() {
+    double forwardPower = controls.getForwardPower();
+    double strafePower  = controls.getStrafePower();
+    double rotatePower  = controls.getRotatePower();
+
+    drive.teleopDrive(forwardPower, strafePower, rotatePower, true);
+
+
+}
+
+
+
+
+
+
+
+
+
+
 }
