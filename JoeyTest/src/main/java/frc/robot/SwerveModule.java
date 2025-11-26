@@ -2,6 +2,7 @@ package frc.robot;
 
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkAbsoluteEncoder;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
@@ -10,12 +11,15 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.AbsoluteEncoderConfig;
+import com.revrobotics.spark.config.EncoderConfig;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-
+import edu.wpi.first.math.util.Units;
 
 
 
@@ -24,9 +28,28 @@ public class SwerveModule {
     private final double ROTATE_I = 0;
     private final double ROTATE_D = 0;
 
+    private final double MOTOR_TO_WHEEL_ROTATION_RATIO = 5.08;
+    private final double WHEEL_DIAMETER_INCHES         = 2.88;
+    private final double WHEEL_DIAMETER_METERS         = Units.inchesToMeters(WHEEL_DIAMETER_INCHES);
+    private final double NEO_VORTEX_FREE_RPM           = 6784;
+    private final double REV_SPIKED_WHEEL_COF          = 1.2;
+    
+    private final double WHEEL_CIRCUMFERENCE_FEET   = Math.PI * WHEEL_DIAMETER_INCHES / 12.0;
+    private final double WHEEL_CIRCUMFERENCE_METERS = Units.feetToMeters(WHEEL_CIRCUMFERENCE_FEET);
+
+    private final double MAX_DRIVE_VEL_MPS = (NEO_VORTEX_FREE_RPM / 60.0) / (MOTOR_TO_WHEEL_ROTATION_RATIO) * (WHEEL_CIRCUMFERENCE_METERS);
+
+    private final double DRIVE_POS_CONVERSION_FACTOR_FEET = (1.0 / MOTOR_TO_WHEEL_ROTATION_RATIO) * WHEEL_CIRCUMFERENCE_FEET;
+    private final double DRIVE_POS_CONVERSION_FACTOR_METERS = Units.feetToMeters(DRIVE_POS_CONVERSION_FACTOR_FEET);
+
+    private final double DRIVE_VEL_CONVERSION_FACTOR_FEET   = (1.0 / 60.0) * (1.0 / MOTOR_TO_WHEEL_ROTATION_RATIO) * WHEEL_CIRCUMFERENCE_FEET;
+    private final double DRIVE_VEL_CONVERSION_FACTOR_METERS = (1.0 / 60.0) * (1.0 / MOTOR_TO_WHEEL_ROTATION_RATIO) * WHEEL_CIRCUMFERENCE_METERS;
 
     private SparkFlex driveMotor;
     private SparkBaseConfig driveMotorConfig;
+
+    private RelativeEncoder driveEncoder;
+    private EncoderConfig driveEncoderConfig;
 
     private SparkMax rotateMotor;
     private SparkMaxConfig rotateMotorConfig;
@@ -41,11 +64,19 @@ public class SwerveModule {
         driveMotorConfig = new SparkFlexConfig();
 
 
-
-
         driveMotorConfig.smartCurrentLimit(Robot.VORTEX_CURRENT_LIMIT);
         driveMotorConfig.idleMode(IdleMode.kBrake);
         driveMotorConfig.inverted(invertDriveMotor);
+
+        driveEncoder = driveMotor.getEncoder();
+        driveEncoder.setPosition(0.0);
+
+        driveEncoderConfig = new EncoderConfig();
+        driveEncoderConfig.positionConversionFactor(DRIVE_POS_CONVERSION_FACTOR_METERS);
+        //driveEncoderConfig.velocityConversionFactor(DRIVE_VEL_CONVERSION_FACTOR_METERS);
+        driveEncoderConfig.velocityConversionFactor(1);
+        driveMotorConfig.apply(driveEncoderConfig);
+
 
         rotateMotor         = new SparkMax(rotateID, MotorType.kBrushless);
         rotateMotorConfig   = new SparkMaxConfig();
@@ -88,12 +119,24 @@ public class SwerveModule {
         
     }
 
+    public SwerveModulePosition getModulePositionMetric() {
+        return new SwerveModulePosition(
+            driveEncoder.getPosition(),
+            new Rotation2d(MathUtil.angleModulus(Units.degreesToRadians(absoluteEncoder.getPosition())))
+        );
+    }
 
+    //test functions - taco yum-yum in tum-tum
 
+    public void 
+    testEncoder()   {
+            System.out.println("feet:" + driveEncoder.getPosition() + " velocity ft/sec:" + driveEncoder.getVelocity());
+    }
 
-
-
-
+    public void 
+    testMotor(double power) {
+        driveMotor.set(power);
+    }
 
 
 }

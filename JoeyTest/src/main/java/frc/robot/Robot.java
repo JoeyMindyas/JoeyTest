@@ -4,10 +4,13 @@
 
 package frc.robot;
 
+import java.util.Optional;
+
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
+import org.photonvision.EstimatedRobotPose;
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
  * the TimedRobot documentation. If you change the name of this class or the package after creating
@@ -31,6 +34,7 @@ public class Robot extends TimedRobot {
   private int printAmount = 5;
   private Controls controls; 
   private Drive drive;
+  //private AprilTags aprilTags;
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -94,6 +98,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    poseControl();
     wheelControl();
   
   }
@@ -116,7 +121,13 @@ public class Robot extends TimedRobot {
     if (integre <= printAmount) {
       integre ++;
     }
+      
+       drive.testEncoders();
+       drive.testMotors(1.0);
+  
   }
+
+
 
   /** This function is called once when the robot is first started up. */
   @Override
@@ -134,15 +145,27 @@ public class Robot extends TimedRobot {
     drive.teleopDrive(forwardPower, strafePower, rotatePower, true);
 
 
+  }
+
+  private void
+  poseControl() {
+    Optional <EstimatedRobotPose> tagPose;
+    Pose2d                        swervePose;
+
+    //aprilTags.updatePhotonPipelineResult();
+
+    //tagPose = aprilTags.getRobot2FieldPose();
+
+
+    swervePose = drive.getSwervePose();
+    System.out.println("Encoder Pose:" + swervePose);
+
+    //if (tagPose !=null){}
+
+
+  }
+
+
+
 }
 
-
-
-
-
-
-
-
-
-
-}
